@@ -13,7 +13,8 @@ import {
   CompanyInfo,
   InteractiveSettings,
   User,
-  BookingStatus
+  BookingStatus,
+  NavMenuConfig
 } from '../types';
 import {
   INITIAL_GAMES,
@@ -23,7 +24,8 @@ import {
   INITIAL_COMPANY_INFO,
   INITIAL_NOTICES,
   INITIAL_REVIEWS,
-  INITIAL_INTERACTIVE_SETTINGS
+  INITIAL_INTERACTIVE_SETTINGS,
+  INITIAL_NAV_MENU_CONFIG
 } from '../data/initialData';
 
 interface StoreContextType {
@@ -96,6 +98,10 @@ interface StoreContextType {
   // Company Info
   companyInfo: CompanyInfo;
   updateCompanyInfo: (info: Partial<CompanyInfo>) => void;
+
+  // Nav Menu Config
+  navMenuConfig: NavMenuConfig;
+  updateNavMenuConfig: (config: Partial<NavMenuConfig>) => void;
 
   // Interactive Settings
   interactiveSettings: InteractiveSettings;
@@ -199,6 +205,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [notices, setNotices] = useState<Notice[]>(() => getStorageItem('notices', INITIAL_NOTICES));
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(() => getStorageItem('companyInfo', INITIAL_COMPANY_INFO));
   const [interactiveSettings, setInteractiveSettings] = useState<InteractiveSettings>(() => getStorageItem('interactiveSettings', INITIAL_INTERACTIVE_SETTINGS));
+  const [navMenuConfig, setNavMenuConfig] = useState<NavMenuConfig>(() => getStorageItem('navMenuConfig', INITIAL_NAV_MENU_CONFIG));
 
   // Modal State for Booking
   const [selectedGameForBooking, setSelectedGameForBooking] = useState<Game | null>(null);
@@ -439,6 +446,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast('인터랙티브 효과 설정이 적용되었습니다.');
   };
 
+  // Nav Menu Config
+  const updateNavMenuConfig = (config: Partial<NavMenuConfig>) => {
+    const updated = { ...navMenuConfig, ...config };
+    setNavMenuConfig(updated);
+    setStorageItem('navMenuConfig', updated);
+    showToast('메인 메뉴의 이름이 변경되었습니다! 🎨');
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -490,6 +505,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         deleteNotice,
         companyInfo,
         updateCompanyInfo,
+        navMenuConfig,
+        updateNavMenuConfig,
         interactiveSettings,
         updateInteractiveSettings,
         toastMessage,

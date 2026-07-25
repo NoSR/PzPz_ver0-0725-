@@ -6,7 +6,8 @@ import {
   CompanyInfo, 
   Notice, 
   Review, 
-  InteractiveSettings 
+  InteractiveSettings,
+  NavMenuConfig
 } from '../types';
 
 export const INITIAL_GAMES: Game[] = [
@@ -230,3 +231,12 @@ export const INITIAL_INTERACTIVE_SETTINGS: InteractiveSettings = {
   particleSpeed: 'medium',
   cursorGlow: true,
 };
+
+export const INITIAL_NAV_MENU_CONFIG: NavMenuConfig = {
+  home: '홈',
+  games: '게임 예약',
+  reviews: '고객 리뷰',
+  notices: '공지 & 이벤트',
+  about: '브랜드 소개',
+};
+

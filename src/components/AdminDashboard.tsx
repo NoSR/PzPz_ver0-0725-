@@ -27,7 +27,10 @@ import {
   Eye, 
   EyeOff, 
   Save, 
-  Maximize2 
+  Maximize2,
+  Menu,
+  RotateCcw,
+  Type
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -61,12 +64,14 @@ export const AdminDashboard: React.FC = () => {
     deleteNotice,
     companyInfo,
     updateCompanyInfo,
+    navMenuConfig,
+    updateNavMenuConfig,
   } = useStore();
 
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
   const [adminTab, setAdminTab] = useState<
-    'bookings' | 'games' | 'hero' | 'form' | 'popups' | 'theme' | 'notices' | 'company'
+    'bookings' | 'games' | 'hero' | 'nav-menu' | 'form' | 'popups' | 'theme' | 'notices' | 'company'
   >('bookings');
 
   // Local state for editing games
@@ -134,6 +139,7 @@ export const AdminDashboard: React.FC = () => {
         {[
           { id: 'bookings', label: '예약 관리', icon: CalendarCheck, badge: bookings.length },
           { id: 'games', label: '게임 등록/관리', icon: Gamepad2, badge: games.length },
+          { id: 'nav-menu', label: '메인 메뉴 이름 변경', icon: Menu },
           { id: 'hero', label: '메인 히어로 설정', icon: Sparkles },
           { id: 'form', label: '예약 폼 항목 설정', icon: SlidersHorizontal },
           { id: 'popups', label: '팝업 관리', icon: Maximize2, badge: popups.length },
@@ -484,7 +490,155 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: Hero Config */}
+      {/* TAB 3: Main Nav Menu Titles Config */}
+      {adminTab === 'nav-menu' && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-500 text-[10px] font-bold mb-1">
+                <Menu className="w-3.5 h-3.5" />
+                <span>네비게이션 레이블 커스텀</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                메인 상단 메뉴 이름 실시간 변경
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                상단 헤더에 표시되는 메뉴 이름을 자유롭게 변경하세요. 텍스트를 간결하게 설정하면 낮아진 해상도 화면에서도 글자가 줄바꿈되거나 밀리지 않습니다.
+              </p>
+            </div>
+
+            <button
+              onClick={() =>
+                updateNavMenuConfig({
+                  home: '홈',
+                  games: '게임 예약',
+                  reviews: '고객 리뷰',
+                  notices: '공지 & 이벤트',
+                  about: '브랜드 소개',
+                })
+              }
+              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 shrink-0 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>기본 메뉴명으로 복원</span>
+            </button>
+          </div>
+
+          {/* Menu items editor grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            {/* Home item */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>1. 홈 메뉴 (Home Tab)</span>
+                <span className="text-[10px] text-slate-400 font-mono">key: home</span>
+              </label>
+              <input
+                type="text"
+                value={navMenuConfig.home}
+                onChange={(e) => updateNavMenuConfig({ home: e.target.value })}
+                placeholder="예: 홈"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">메인 화면으로 이동하는 첫 번째 메뉴입니다.</p>
+            </div>
+
+            {/* Games item */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>2. 게임 스토어 & 예약 메뉴</span>
+                <span className="text-[10px] text-slate-400 font-mono">key: games</span>
+              </label>
+              <input
+                type="text"
+                value={navMenuConfig.games}
+                onChange={(e) => updateNavMenuConfig({ games: e.target.value })}
+                placeholder="예: 게임 예약"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">게임 목록 및 실시간 예약 섹션 이름입니다.</p>
+            </div>
+
+            {/* Reviews item */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>3. 고객 리뷰 메뉴</span>
+                <span className="text-[10px] text-slate-400 font-mono">key: reviews</span>
+              </label>
+              <input
+                type="text"
+                value={navMenuConfig.reviews}
+                onChange={(e) => updateNavMenuConfig({ reviews: e.target.value })}
+                placeholder="예: 고객 리뷰"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">고객 후기 및 랭킹 모음 메뉴입니다.</p>
+            </div>
+
+            {/* Notices item */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>4. 공지 & 이벤트 메뉴</span>
+                <span className="text-[10px] text-slate-400 font-mono">key: notices</span>
+              </label>
+              <input
+                type="text"
+                value={navMenuConfig.notices}
+                onChange={(e) => updateNavMenuConfig({ notices: e.target.value })}
+                placeholder="예: 공지 & 이벤트"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">공지사항 및 프로모션 안내 메뉴입니다.</p>
+            </div>
+
+            {/* About item */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>5. 브랜드/회사 소개 메뉴</span>
+                <span className="text-[10px] text-slate-400 font-mono">key: about</span>
+              </label>
+              <input
+                type="text"
+                value={navMenuConfig.about}
+                onChange={(e) => updateNavMenuConfig({ about: e.target.value })}
+                placeholder="예: 브랜드 소개"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">매장 위치 및 회사 소개 메뉴입니다.</p>
+            </div>
+          </div>
+
+          {/* Live Preview Box */}
+          <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 text-white space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-purple-400">
+              <Type className="w-4 h-4" />
+              <span>실시간 상단 네비게이션 헤더 미리보기</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-x-auto scrollbar-none">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-full border border-slate-800 shrink-0">
+                <span className="px-3 py-1.5 rounded-full bg-purple-600 text-white font-bold text-xs whitespace-nowrap">
+                  {navMenuConfig.home || '홈'}
+                </span>
+                <span className="px-3 py-1.5 rounded-full text-slate-300 font-bold text-xs whitespace-nowrap">
+                  {navMenuConfig.games || '게임 예약'}
+                </span>
+                <span className="px-3 py-1.5 rounded-full text-slate-300 font-bold text-xs whitespace-nowrap">
+                  {navMenuConfig.reviews || '고객 리뷰'}
+                </span>
+                <span className="px-3 py-1.5 rounded-full text-slate-300 font-bold text-xs whitespace-nowrap">
+                  {navMenuConfig.notices || '공지 & 이벤트'}
+                </span>
+                {companyInfo.visible && (
+                  <span className="px-3 py-1.5 rounded-full text-slate-300 font-bold text-xs whitespace-nowrap">
+                    {navMenuConfig.about || '브랜드 소개'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: Hero Config */}
       {adminTab === 'hero' && (
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <h3 className="text-xl font-black text-slate-900 dark:text-white">

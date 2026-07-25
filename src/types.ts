@@ -143,6 +143,14 @@ export interface InteractiveSettings {
   cursorGlow: boolean;
 }
 
+export interface NavMenuConfig {
+  home: string;
+  games: string;
+  reviews: string;
+  notices: string;
+  about: string;
+}
+
 export interface User {
   id: string;
   name: string;
