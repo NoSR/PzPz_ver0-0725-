@@ -52,7 +52,7 @@ Bun을 Cloudflare 빌드 환경에서 사용할 수 없다면 Build command를 `
 
 ## 현재 운영 범위
 
-현재 예약과 관리자 데이터는 브라우저 `localStorage`에 저장되는 초안입니다. 여러 기기에서 공유되는 실시간 예약과 운영용 관리자 기능을 제공하려면 Cloudflare Pages Functions/Workers와 D1 API, 서버 측 관리자 인증이 추가로 필요합니다.
+로컬 개발 환경에서는 Pages Functions와 D1을 사용해 게임별 예약 가능 시간 조회, 중복 슬롯 방지 예약 요청, 관리자 세션 인증을 검증할 수 있습니다. 현재 Cloudflare Pages 배포에 연결된 D1 binding과 실제 매장 seed 데이터는 아직 준비 전이므로, 배포된 사이트를 운영용 예약 시스템으로 사용하기 전에는 Preview/Production D1을 만들고 migrations, approved content seed, 관리자 계정을 적용해야 합니다.
 
 ## 사용자가 해야 할 Cloudflare 작업
 

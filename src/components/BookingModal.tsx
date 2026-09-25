@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { SEASONAL_THEMES } from '../utils/themeUtils';
+import { Availability, BookingConfirmation, createBooking, getAvailability } from '../api/publicBooking';
 import confetti from 'canvas-confetti';
 import { 
   X, 
@@ -20,10 +21,8 @@ export const BookingModal: React.FC = () => {
     isBookingModalOpen,
     setIsBookingModalOpen,
     bookingFields,
-    addBooking,
-    user,
-    setIsAuthModalOpen,
     seasonalTheme,
+    showToast,
   } = useStore();
 
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
@@ -35,16 +34,62 @@ export const BookingModal: React.FC = () => {
     return tomorrow.toISOString().slice(0, 10);
   });
 
-  const [selectedTime, setSelectedTime] = useState<string>('15:00');
+  const [selectedTime, setSelectedTime] = useState<string>('');
   const [players, setPlayers] = useState<number>(selectedGameForBooking?.minPlayers || 2);
   const [customFormValues, setCustomFormValues] = useState<Record<string, string>>({
-    userName: user?.name || '',
-    userPhone: user?.phone || '',
-    userEmail: user?.email || '',
+    userName: '',
+    userPhone: '',
+    userEmail: '',
     userAddress: '',
   });
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<Availability | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
+
+  useEffect(() => {
+    if (!isBookingModalOpen || !selectedGameForBooking || !selectedDate) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAvailability = async () => {
+      setSlotsLoading(true);
+      setErrorMsg(null);
+
+      try {
+        const nextAvailability = await getAvailability(selectedGameForBooking.id, selectedDate);
+        if (cancelled) return;
+
+        setAvailability(nextAvailability);
+        setPlayers((currentPlayers) => Math.min(
+          Math.max(currentPlayers, nextAvailability.game.minPlayers),
+          nextAvailability.game.maxPlayers,
+        ));
+        setSelectedTime((currentTime) => {
+          const currentSlot = nextAvailability.slots.find((slot) => slot.time === currentTime);
+          return currentSlot?.available ? currentTime : nextAvailability.slots.find((slot) => slot.available)?.time ?? '';
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setAvailability(null);
+          setSelectedTime('');
+          setErrorMsg(error instanceof Error ? error.message : '예약 가능 시간을 불러오지 못했습니다.');
+        }
+      } finally {
+        if (!cancelled) setSlotsLoading(false);
+      }
+    };
+
+    void loadAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isBookingModalOpen, selectedDate, selectedGameForBooking]);
 
   if (!isBookingModalOpen || !selectedGameForBooking) return null;
 
@@ -52,28 +97,24 @@ export const BookingModal: React.FC = () => {
     .filter((f) => f.enabled)
     .sort((a, b) => a.order - b.order);
 
-  const availableTimeSlots = [
-    '11:00', '12:30', '14:00', '15:30', '17:00', '18:30', '20:00', '21:30'
-  ];
+  const bookingGame = availability?.game ?? {
+    title: selectedGameForBooking.title,
+    minPlayers: selectedGameForBooking.minPlayers,
+    maxPlayers: selectedGameForBooking.maxPlayers,
+    pricePerPerson: selectedGameForBooking.pricePerPerson,
+  };
 
   const handleCustomFieldChange = (key: string, val: string) => {
     setCustomFormValues((prev) => ({ ...prev, [key]: val }));
   };
 
   const calculateTotal = () => {
-    return selectedGameForBooking.pricePerPerson * players;
+    return bookingGame.pricePerPerson * players;
   };
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-
-    // Guard: Auth check
-    if (!user) {
-      setIsBookingModalOpen(false);
-      setIsAuthModalOpen(true);
-      return;
-    }
 
     // Validate required dynamic fields
     for (const field of activeFields) {
@@ -88,38 +129,52 @@ export const BookingModal: React.FC = () => {
       }
     }
 
-    // Prepare booking record
-    const userName = customFormValues['userName'] || user.name;
-    const userPhone = customFormValues['userPhone'] || user.phone;
-    const userEmail = customFormValues['userEmail'] || user.email;
-    const userAddress = customFormValues['userAddress'] || '';
 
-    // Create Booking
-    addBooking({
-      userName,
-      userPhone,
-      userEmail,
-      userAddress,
-      gameId: selectedGameForBooking.id,
-      gameTitle: selectedGameForBooking.title,
-      date: selectedDate,
-      time: selectedTime,
-      players,
-      totalPrice: calculateTotal(),
-      customData: customFormValues,
-    });
-
-    // Fire Celebration Confetti
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-    } catch (err) {
-      // ignore
+    if (!selectedTime || !availability) {
+      setErrorMsg('예약 가능한 시간을 선택해주세요.');
+      return;
     }
 
+    const extraData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(customFormValues)) {
+      if (!['userName', 'userPhone', 'userEmail', 'userAddress', 'players'].includes(key) && typeof value === 'string') {
+        extraData[key] = value;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await createBooking({
+        gameId: selectedGameForBooking.id,
+        date: selectedDate,
+        time: selectedTime,
+        playerCount: players,
+        customerName: customFormValues.userName ?? '',
+        customerPhone: customFormValues.userPhone ?? '',
+        customerEmail: customFormValues.userEmail || undefined,
+        customerData: extraData,
+      });
+
+      setConfirmation(result);
+      showToast(`예약 요청이 접수되었습니다. 예약 번호: ${result.bookingId}`);
+
+      try {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      } catch {
+        // Canvas effects must never block a successful reservation.
+      }
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '예약 요청을 처리하지 못했습니다.');
+      setAvailability(null);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setConfirmation(null);
+    setErrorMsg(null);
     setIsBookingModalOpen(false);
   };
 
@@ -129,7 +184,7 @@ export const BookingModal: React.FC = () => {
         
         {/* Close button */}
         <button
-          onClick={() => setIsBookingModalOpen(false)}
+          onClick={handleClose}
           className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
@@ -145,28 +200,9 @@ export const BookingModal: React.FC = () => {
             {selectedGameForBooking.title}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            1인 {selectedGameForBooking.pricePerPerson.toLocaleString()}원 · 권장 인원 {selectedGameForBooking.minPlayers}~{selectedGameForBooking.maxPlayers}인
+            1인 {bookingGame.pricePerPerson.toLocaleString()}원 · 권장 인원 {bookingGame.minPlayers}~{bookingGame.maxPlayers}인
           </p>
         </div>
-
-        {/* Auth Notice if guest */}
-        {!user && (
-          <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-600 dark:text-purple-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UserIcon className="w-4 h-4" />
-              <span>로그인 후 예약을 완료하실 수 있습니다.</span>
-            </div>
-            <button
-              onClick={() => {
-                setIsBookingModalOpen(false);
-                setIsAuthModalOpen(true);
-              }}
-              className="px-3 py-1 rounded-lg bg-purple-600 text-white font-bold text-[11px]"
-            >
-              간편 로그인
-            </button>
-          </div>
-        )}
 
         {/* Error banner */}
         {errorMsg && (
@@ -176,7 +212,22 @@ export const BookingModal: React.FC = () => {
           </div>
         )}
 
-        {/* Booking Form */}
+        {confirmation ? (
+          <div className="space-y-5 text-center">
+            <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+              <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500" />
+              <p className="text-sm font-black text-slate-900 dark:text-white">예약 요청이 접수되었습니다.</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">{confirmation.message}</p>
+              <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">예약 번호: {confirmation.bookingId}</p>
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {confirmation.date} {confirmation.time} / {confirmation.playerCount}명 / {confirmation.totalPrice.toLocaleString()}원
+            </div>
+            <button type="button" onClick={handleClose} className={`w-full py-3.5 rounded-2xl text-sm font-black ${theme.buttonBg} ${theme.buttonHover}`}>
+              확인
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmitBooking} className="space-y-5">
           
           {/* Step 1: Select Date & Time */}
@@ -205,11 +256,11 @@ export const BookingModal: React.FC = () => {
                   onChange={(e) => setPlayers(Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  {Array.from({ length: selectedGameForBooking.maxPlayers - selectedGameForBooking.minPlayers + 1 }).map((_, idx) => {
-                    const count = selectedGameForBooking.minPlayers + idx;
+                  {Array.from({ length: bookingGame.maxPlayers - bookingGame.minPlayers + 1 }).map((_, idx) => {
+                    const count = bookingGame.minPlayers + idx;
                     return (
                       <option key={count} value={count}>
-                        {count}명 (총 {(selectedGameForBooking.pricePerPerson * count).toLocaleString()}원)
+                        {count}명 (총 {(bookingGame.pricePerPerson * count).toLocaleString()}원)
                       </option>
                     );
                   })}
@@ -220,22 +271,31 @@ export const BookingModal: React.FC = () => {
             {/* Time slot grid */}
             <div>
               <span className="text-[11px] text-slate-400 block mb-1.5">시간 타임</span>
+              {slotsLoading ? (
+                <p className="text-xs text-slate-400 py-3">예약 가능 시간을 확인하고 있습니다.</p>
+              ) : availability?.slots.length ? (
               <div className="grid grid-cols-4 gap-2">
-                {availableTimeSlots.map((slot) => (
+                {availability.slots.map((slot) => (
                   <button
                     type="button"
-                    key={slot}
-                    onClick={() => setSelectedTime(slot)}
+                    key={slot.time}
+                    disabled={!slot.available}
+                    onClick={() => setSelectedTime(slot.time)}
                     className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                      selectedTime === slot
+                      selectedTime === slot.time
                         ? 'bg-purple-600 text-white border-purple-500 shadow-md'
-                        : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-purple-400'
+                        : slot.available
+                          ? 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-purple-400'
+                          : 'bg-slate-100/50 dark:bg-slate-950/50 border-slate-200/60 dark:border-slate-800 text-slate-400 cursor-not-allowed line-through'
                     }`}
                   >
-                    {slot}
+                    {slot.time}
                   </button>
                 ))}
               </div>
+              ) : (
+                <p className="text-xs text-slate-400 py-3">선택한 날짜에는 예약 가능한 시간이 없습니다.</p>
+              )}
             </div>
           </div>
 
@@ -303,12 +363,14 @@ export const BookingModal: React.FC = () => {
           {/* Submit */}
           <button
             type="submit"
+            disabled={isSubmitting || slotsLoading || !selectedTime}
             className={`w-full py-4 rounded-2xl font-black text-sm ${theme.buttonBg} ${theme.buttonHover} shadow-xl transition-all`}
           >
-            예약 완료 및 접수하기 🎯
+            {isSubmitting ? '예약 요청을 접수하고 있습니다...' : '예약 완료 및 접수하기 🎯'}
           </button>
 
         </form>
+        )}
 
       </div>
     </div>

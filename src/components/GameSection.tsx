@@ -20,9 +20,7 @@ export const GameSection: React.FC = () => {
     games, 
     seasonalTheme, 
     setSelectedGameForBooking, 
-    setIsBookingModalOpen, 
-    user, 
-    setIsAuthModalOpen 
+    setIsBookingModalOpen,
   } = useStore();
 
   const [detailGameModal, setDetailGameModal] = useState<Game | null>(null);
@@ -30,10 +28,6 @@ export const GameSection: React.FC = () => {
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
   const handleBookClick = (game: Game) => {
-    if (!user) {
-      setIsAuthModalOpen(true);
-      return;
-    }
     setSelectedGameForBooking(game);
     setIsBookingModalOpen(true);
   };
