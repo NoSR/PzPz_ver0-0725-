@@ -20,6 +20,15 @@ bun run build
 
 빌드 결과는 `dist/`에 생성됩니다.
 
+Pages Functions와 로컬 D1을 함께 확인하려면 먼저 migration을 적용한 뒤 Pages 개발 서버를 실행합니다.
+
+```bash
+npm run db:migrate:local
+npm run dev:pages
+```
+
+서버가 실행되면 `/api/health`는 Pages Function과 D1 연결 상태를 반환합니다.
+
 ## Cloudflare Pages 배포
 
 현재 앱은 정적 Vite SPA이므로 Cloudflare Pages로 먼저 배포합니다.
