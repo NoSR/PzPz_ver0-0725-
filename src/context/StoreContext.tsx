@@ -27,6 +27,7 @@ import {
   INITIAL_INTERACTIVE_SETTINGS,
   INITIAL_NAV_MENU_CONFIG
 } from '../data/initialData';
+import { createAdminSession, deleteAdminSession, getAdminSession } from '../api/adminSession';
 
 interface StoreContextType {
   // Theme & Aesthetic
@@ -45,8 +46,10 @@ interface StoreContextType {
 
   // Auth & User
   user: User | null;
-  loginAs: (role: 'customer' | 'admin', name?: string) => void;
-  logout: () => void;
+  loginAsCustomer: (name?: string) => void;
+  loginAdmin: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  adminSessionLoading: boolean;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   isAdminAuthModalOpen: boolean;
@@ -143,15 +146,36 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Navigation & Auth
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [user, setUser] = useState<User | null>(() => getStorageItem('user', {
-    id: 'guest-demo-1',
-    name: '김퍼즐 (체험고객)',
-    email: 'puzzle_user@example.com',
-    phone: '010-9876-5432',
-    role: 'customer'
-  }));
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = getStorageItem<User | null>('user', null);
+    return savedUser?.role === 'customer' ? savedUser : null;
+  });
+  const [adminSessionLoading, setAdminSessionLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const restoreAdminSession = async () => {
+      try {
+        const session = await getAdminSession();
+        if (session) {
+          setUser({
+            id: session.admin.id,
+            name: session.admin.email,
+            email: session.admin.email,
+            phone: '',
+            role: 'admin'
+          });
+        }
+      } catch (error) {
+        console.error('Admin session restore error:', error);
+      } finally {
+        setAdminSessionLoading(false);
+      }
+    };
+
+    void restoreAdminSession();
+  }, []);
 
   // Route listener for /pz_admin
   useEffect(() => {
@@ -159,8 +183,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const path = window.location.pathname;
       const hash = window.location.hash;
       if (path === '/pz_admin' || path.endsWith('/pz_admin') || hash === '#/pz_admin') {
-        const savedUser = getStorageItem<User | null>('user', null);
-        if (savedUser?.role === 'admin') {
+        if (adminSessionLoading) {
+          return;
+        }
+
+        if (user?.role === 'admin') {
           setActiveTab('admin');
         } else {
           setIsAdminAuthModalOpen(true);
@@ -172,7 +199,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     window.addEventListener('popstate', handleRouteCheck);
     return () => window.removeEventListener('popstate', handleRouteCheck);
-  }, []);
+  }, [adminSessionLoading, user]);
 
   // Core App Data States
   const [games, setGames] = useState<Game[]>(() => getStorageItem('games', INITIAL_GAMES));
@@ -250,14 +277,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   // Auth Handlers
-  const loginAs = (role: 'customer' | 'admin', name?: string) => {
-    const newUser: User = role === 'admin' ? {
-      id: 'admin-master',
-      name: name || '최고 관리자',
-      email: 'admin@puzzlepuzzle.com',
-      phone: '010-0000-0000',
-      role: 'admin'
-    } : {
+  const loginAsCustomer = (name?: string) => {
+    const newUser: User = {
       id: 'user-' + Date.now().toString().slice(-4),
       name: name || '김퍼즐 (체험고객)',
       email: 'user@example.com',
@@ -270,7 +291,29 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast(`${newUser.name}님으로 로그인되었습니다.`);
   };
 
-  const logout = () => {
+  const loginAdmin = async (email: string, password: string) => {
+    const session = await createAdminSession(email, password);
+    const newUser: User = {
+      id: session.admin.id,
+      name: session.admin.email,
+      email: session.admin.email,
+      phone: '',
+      role: 'admin'
+    };
+
+    setUser(newUser);
+    setStorageItem('user', null);
+  };
+
+  const logout = async () => {
+    if (user?.role === 'admin') {
+      try {
+        await deleteAdminSession();
+      } catch (error) {
+        console.error('Admin logout error:', error);
+      }
+    }
+
     setUser(null);
     setStorageItem('user', null);
     showToast('로그아웃 되었습니다.');
@@ -468,8 +511,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         activeTab,
         setActiveTab,
         user,
-        loginAs,
+        loginAsCustomer,
+        loginAdmin,
         logout,
+        adminSessionLoading,
         isAuthModalOpen,
         setIsAuthModalOpen,
         isAdminAuthModalOpen,

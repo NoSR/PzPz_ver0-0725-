@@ -4,7 +4,7 @@ import { SEASONAL_THEMES } from '../utils/themeUtils';
 import { X, UserCheck, ShieldCheck, Sparkles, Lock } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, loginAs, seasonalTheme } = useStore();
+  const { isAuthModalOpen, setIsAuthModalOpen, loginAsCustomer, seasonalTheme } = useStore();
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
   const [inputName, setInputName] = useState('');
@@ -13,7 +13,7 @@ export const AuthModal: React.FC = () => {
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loginAs('customer', inputName.trim() || undefined);
+    loginAsCustomer(inputName.trim() || undefined);
   };
 
   return (
@@ -43,7 +43,7 @@ export const AuthModal: React.FC = () => {
         {/* Quick Customer Login & Custom Name Form */}
         <div className="space-y-4 pt-1">
           <button
-            onClick={() => loginAs('customer', '김퍼즐 (체험고객)')}
+            onClick={() => loginAsCustomer('김퍼즐 (체험고객)')}
             className={`w-full py-3.5 rounded-2xl font-extrabold text-xs ${theme.buttonBg} shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105`}
           >
             <UserCheck className="w-4 h-4" />

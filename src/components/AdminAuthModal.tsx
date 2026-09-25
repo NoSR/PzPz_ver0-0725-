@@ -7,7 +7,7 @@ export const AdminAuthModal: React.FC = () => {
   const {
     isAdminAuthModalOpen,
     setIsAdminAuthModalOpen,
-    loginAs,
+    loginAdmin,
     setActiveTab,
     seasonalTheme,
     showToast,
@@ -15,24 +15,25 @@ export const AdminAuthModal: React.FC = () => {
 
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isAdminAuthModalOpen) return null;
 
-  const handleAdminAuthSubmit = (e: React.FormEvent) => {
+  const handleAdminAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPw = password.trim();
+    setIsSubmitting(true);
+    setErrorMsg('');
 
-    // Valid passwords: 1234, admin1234, or puzzle2026
-    if (cleanPw === '1234' || cleanPw === 'admin1234' || cleanPw === 'puzzle2026') {
-      loginAs('admin', '최고 관리자');
+    try {
+      await loginAdmin(email, password);
       setActiveTab('admin');
       setIsAdminAuthModalOpen(false);
+      setEmail('');
       setPassword('');
-      setErrorMsg('');
 
-      // Update URL to /pz_admin for direct route reflection
       try {
         window.history.pushState({}, '', '/pz_admin');
       } catch (err) {
@@ -40,14 +41,17 @@ export const AdminAuthModal: React.FC = () => {
       }
 
       showToast('🔒 관리자 인증 성공! 대시보드로 이동합니다.');
-    } else {
-      setErrorMsg('비밀번호가 일치하지 않습니다. (기본 비밀번호: 1234)');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '관리자 인증에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
     setIsAdminAuthModalOpen(false);
     setErrorMsg('');
+    setEmail('');
     setPassword('');
   };
 
@@ -85,9 +89,28 @@ export const AdminAuthModal: React.FC = () => {
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
-                <span>관리자 인증 비밀번호</span>
+                <span>관리자 이메일</span>
               </span>
-              <span className="text-[10px] font-normal text-slate-400">(기본 PIN: 1234)</span>
+            </label>
+
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (errorMsg) setErrorMsg('');
+              }}
+              placeholder="admin@example.com"
+              autoComplete="username"
+              required
+              className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
+              <span>관리자 비밀번호</span>
             </label>
 
             <input
@@ -97,8 +120,9 @@ export const AdminAuthModal: React.FC = () => {
                 setPassword(e.target.value);
                 if (errorMsg) setErrorMsg('');
               }}
-              placeholder="비밀번호 입력 (예: 1234)"
-              autoFocus
+              placeholder="비밀번호 입력"
+              autoComplete="current-password"
+              required
               className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
             />
           </div>
@@ -122,10 +146,11 @@ export const AdminAuthModal: React.FC = () => {
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/20 transition-transform active:scale-95 flex items-center justify-center gap-2"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>관리자 대시보드 인증 로그인</span>
+            <span>{isSubmitting ? '인증 확인 중...' : '관리자 대시보드 인증 로그인'}</span>
           </button>
         </form>
 

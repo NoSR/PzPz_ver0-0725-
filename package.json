@@ -9,8 +9,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "dev:pages": "npm run build && wrangler pages dev dist --d1 DB --persist-to .wrangler/state",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state"
+    "dev:pages": "npm run build && wrangler pages dev dist --persist-to .wrangler/state",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
+    "admin:provision:sql": "tsx scripts/provision-admin.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
