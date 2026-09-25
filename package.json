@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit",
     "dev:pages": "npm run build && wrangler pages dev dist --persist-to .wrangler/state",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
+    "db:seed:local": "wrangler d1 execute DB --local --persist-to .wrangler/state --file scripts/seed-local.sql",
     "admin:provision:sql": "tsx scripts/provision-admin.ts"
   },
   "dependencies": {
