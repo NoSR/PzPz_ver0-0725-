@@ -111,6 +111,30 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleGameDelete = async (id: string) => {
+    try {
+      await deleteGame(id);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '게임을 비활성화하지 못했습니다.');
+    }
+  };
+
+  const handleGameSave = async () => {
+    if (!editingGame) return;
+
+    try {
+      if (isNewGame) {
+        const { id: _id, ...gameData } = editingGame;
+        await addGame(gameData);
+      } else {
+        await updateGame(editingGame.id, editingGame);
+      }
+      setEditingGame(null);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '게임 정보를 저장하지 못했습니다.');
+    }
+  };
+
   // Form field toggle helper
   const handleToggleField = (fieldId: string, property: 'required' | 'enabled') => {
     const updated = bookingFields.map((f) => {
@@ -392,7 +416,7 @@ export const AdminDashboard: React.FC = () => {
                     <span>수정 / 포스팅 작성</span>
                   </button>
                   <button
-                    onClick={() => deleteGame(g.id)}
+                    onClick={() => void handleGameDelete(g.id)}
                     className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 font-bold text-xs flex items-center gap-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -501,14 +525,7 @@ export const AdminDashboard: React.FC = () => {
                     취소
                   </button>
                   <button
-                    onClick={() => {
-                      if (isNewGame) {
-                        addGame(editingGame);
-                      } else {
-                        updateGame(editingGame.id, editingGame);
-                      }
-                      setEditingGame(null);
-                    }}
+                    onClick={() => void handleGameSave()}
                     className={`px-5 py-2 rounded-xl text-xs font-black ${theme.buttonBg}`}
                   >
                     저장하기

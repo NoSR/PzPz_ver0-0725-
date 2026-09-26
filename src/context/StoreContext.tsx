@@ -29,6 +29,8 @@ import {
 } from '../data/initialData';
 import { createAdminSession, deleteAdminSession, getAdminSession } from '../api/adminSession';
 import { getAdminBookings, updateAdminBooking } from '../api/adminBookings';
+import { getPublicGames } from '../api/publicGames';
+import { createAdminGame, disableAdminGame, getAdminGames, patchAdminGame } from '../api/adminGames';
 
 interface StoreContextType {
   // Theme & Aesthetic
@@ -58,9 +60,9 @@ interface StoreContextType {
 
   // Games
   games: Game[];
-  addGame: (game: Omit<Game, 'id'>) => void;
-  updateGame: (id: string, updated: Partial<Game>) => void;
-  deleteGame: (id: string) => void;
+  addGame: (game: Omit<Game, 'id'>) => Promise<void>;
+  updateGame: (id: string, updated: Partial<Game>) => Promise<void>;
+  deleteGame: (id: string) => Promise<void>;
 
   // Bookings
   bookings: Booking[];
@@ -258,6 +260,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [interactiveSettings, setInteractiveSettings] = useState<InteractiveSettings>(() => getStorageItem('interactiveSettings', INITIAL_INTERACTIVE_SETTINGS));
   const [navMenuConfig, setNavMenuConfig] = useState<NavMenuConfig>(() => getStorageItem('navMenuConfig', INITIAL_NAV_MENU_CONFIG));
 
+  useEffect(() => {
+    const loadPublicGames = async () => {
+      try {
+        const publicGames = await getPublicGames();
+        if (publicGames.length > 0) {
+          setGames(publicGames);
+        }
+      } catch (error) {
+        console.error('Public games load error:', error);
+      }
+    };
+
+    void loadPublicGames();
+  }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    void getAdminGames()
+      .then(setGames)
+      .catch((error) => console.error('Admin games load error:', error));
+  }, [user]);
+
   // Modal State for Booking
   const [selectedGameForBooking, setSelectedGameForBooking] = useState<Game | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
@@ -344,7 +368,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   // Games Handlers
-  const addGame = (gameData: Omit<Game, 'id'>) => {
+  const addGame = async (gameData: Omit<Game, 'id'>) => {
+    if (user?.role === 'admin') {
+      const created = await createAdminGame(gameData);
+      setGames((current) => [created, ...current]);
+      showToast(`신규 게임 '${created.title}' 등록 완료!`);
+      return;
+    }
+
     const newGame: Game = {
       ...gameData,
       id: 'game-' + Date.now()
@@ -355,14 +386,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast(`신규 게임 '${newGame.title}' 등록 완료!`);
   };
 
-  const updateGame = (id: string, updated: Partial<Game>) => {
+  const updateGame = async (id: string, updated: Partial<Game>) => {
+    if (user?.role === 'admin') {
+      const saved = await patchAdminGame(id, updated);
+      setGames((current) => current.map((game) => game.id === id ? saved : game));
+      showToast('게임 정보가 수정되었습니다.');
+      return;
+    }
+
     const updatedList = games.map((g) => (g.id === id ? { ...g, ...updated } : g));
     setGames(updatedList);
     setStorageItem('games', updatedList);
     showToast('게임 정보가 수정되었습니다.');
   };
 
-  const deleteGame = (id: string) => {
+  const deleteGame = async (id: string) => {
+    if (user?.role === 'admin') {
+      await disableAdminGame(id);
+      setGames((current) => current.filter((game) => game.id !== id));
+      showToast('게임이 비활성화되었습니다.');
+      return;
+    }
+
     const updatedList = games.filter((g) => g.id !== id);
     setGames(updatedList);
     setStorageItem('games', updatedList);
