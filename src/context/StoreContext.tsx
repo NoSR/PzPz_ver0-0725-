@@ -67,6 +67,8 @@ interface StoreContextType {
   addBooking: (bookingData: Omit<Booking, 'id' | 'createdAt' | 'status' | 'userId'>) => Booking;
   updateBookingStatus: (id: string, status: BookingStatus) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
+  adminBookingsLoading: boolean;
+  adminBookingsError: string | null;
   selectedGameForBooking: Game | null;
   setSelectedGameForBooking: (game: Game | null) => void;
   isBookingModalOpen: boolean;
@@ -206,10 +208,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (user?.role !== 'admin') return;
 
     const loadAdminBookings = async () => {
+      setAdminBookingsLoading(true);
+      setAdminBookingsError(null);
       try {
         setBookings(await getAdminBookings());
       } catch (error) {
         console.error('Admin bookings load error:', error);
+        setAdminBookingsError(error instanceof Error ? error.message : '예약 목록을 불러오지 못했습니다.');
+      } finally {
+        setAdminBookingsLoading(false);
       }
     };
 
@@ -237,6 +244,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       customData: { '요청 사항 / 방문 경로': '인스타그램 광고 보고 예약합니다!' }
     }
   ]));
+  const [adminBookingsLoading, setAdminBookingsLoading] = useState(false);
+  const [adminBookingsError, setAdminBookingsError] = useState<string | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingFieldConfig[]>(() => getStorageItem('bookingFields', INITIAL_BOOKING_FIELDS));
   const [heroConfig, setHeroConfig] = useState<HeroConfig>(() => getStorageItem('heroConfig', INITIAL_HERO_CONFIG));
@@ -556,6 +565,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         addBooking,
         updateBookingStatus,
         deleteBooking,
+        adminBookingsLoading,
+        adminBookingsError,
         selectedGameForBooking,
         setSelectedGameForBooking,
         isBookingModalOpen,

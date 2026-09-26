@@ -37,7 +37,9 @@ export const AdminDashboard: React.FC = () => {
   const {
     bookings,
     updateBookingStatus,
-    deleteBooking,
+    adminBookingsLoading,
+    adminBookingsError,
+    showToast,
     games,
     addGame,
     updateGame,
@@ -91,10 +93,23 @@ export const AdminDashboard: React.FC = () => {
 
   // Filtering bookings
   const [bookingFilterStatus, setBookingFilterStatus] = useState<string>('all');
+  const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
 
   const filteredBookings = bookingFilterStatus === 'all'
     ? bookings
     : bookings.filter((b) => b.status === bookingFilterStatus);
+
+  const handleBookingStatusChange = async (id: string, status: BookingStatus) => {
+    setUpdatingBookingId(id);
+    try {
+      await updateBookingStatus(id, status);
+    } catch (error) {
+      console.error('Booking status update error:', error);
+      showToast(error instanceof Error ? error.message : '예약 상태를 변경하지 못했습니다.');
+    } finally {
+      setUpdatingBookingId(null);
+    }
+  };
 
   // Form field toggle helper
   const handleToggleField = (fieldId: string, property: 'required' | 'enabled') => {
@@ -198,6 +213,18 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="space-y-4">
+            {adminBookingsLoading && (
+              <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 text-xs font-bold text-slate-500">
+                서버 예약 목록을 불러오는 중입니다...
+              </div>
+            )}
+
+            {adminBookingsError && (
+              <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-500">
+                {adminBookingsError}
+              </div>
+            )}
+
             {filteredBookings.map((b) => (
               <div
                 key={b.id}
@@ -213,7 +240,8 @@ export const AdminDashboard: React.FC = () => {
                   {/* Status buttons */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => updateBookingStatus(b.id, 'confirmed')}
+                      onClick={() => void handleBookingStatusChange(b.id, 'confirmed')}
+                      disabled={updatingBookingId === b.id}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 ${
                         b.status === 'confirmed'
                           ? 'bg-emerald-500 text-white shadow-md'
@@ -225,7 +253,8 @@ export const AdminDashboard: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => updateBookingStatus(b.id, 'cancelled')}
+                      onClick={() => void handleBookingStatusChange(b.id, 'cancelled')}
+                      disabled={updatingBookingId === b.id}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 ${
                         b.status === 'cancelled'
                           ? 'bg-red-500 text-white shadow-md'
@@ -237,7 +266,8 @@ export const AdminDashboard: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => deleteBooking(b.id)}
+                      onClick={() => void handleBookingStatusChange(b.id, 'cancelled')}
+                      disabled={updatingBookingId === b.id}
                       className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-red-500 hover:bg-red-500/20"
                       title="삭제"
                     >
