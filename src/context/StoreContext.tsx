@@ -28,6 +28,7 @@ import {
   INITIAL_NAV_MENU_CONFIG
 } from '../data/initialData';
 import { createAdminSession, deleteAdminSession, getAdminSession } from '../api/adminSession';
+import { getAdminBookings, updateAdminBooking } from '../api/adminBookings';
 
 interface StoreContextType {
   // Theme & Aesthetic
@@ -64,8 +65,8 @@ interface StoreContextType {
   // Bookings
   bookings: Booking[];
   addBooking: (bookingData: Omit<Booking, 'id' | 'createdAt' | 'status' | 'userId'>) => Booking;
-  updateBookingStatus: (id: string, status: BookingStatus) => void;
-  deleteBooking: (id: string) => void;
+  updateBookingStatus: (id: string, status: BookingStatus) => Promise<void>;
+  deleteBooking: (id: string) => Promise<void>;
   selectedGameForBooking: Game | null;
   setSelectedGameForBooking: (game: Game | null) => void;
   isBookingModalOpen: boolean;
@@ -200,6 +201,20 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     window.addEventListener('popstate', handleRouteCheck);
     return () => window.removeEventListener('popstate', handleRouteCheck);
   }, [adminSessionLoading, user]);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+
+    const loadAdminBookings = async () => {
+      try {
+        setBookings(await getAdminBookings());
+      } catch (error) {
+        console.error('Admin bookings load error:', error);
+      }
+    };
+
+    void loadAdminBookings();
+  }, [user]);
 
   // Core App Data States
   const [games, setGames] = useState<Game[]>(() => getStorageItem('games', INITIAL_GAMES));
@@ -361,14 +376,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newBooking;
   };
 
-  const updateBookingStatus = (id: string, status: BookingStatus) => {
+  const updateBookingStatus = async (id: string, status: BookingStatus) => {
+    if (user?.role === 'admin') {
+      await updateAdminBooking(id, status);
+      setBookings((current) => current.map((booking) => booking.id === id ? { ...booking, status } : booking));
+      showToast(`예약 상태가 '${status}'(으)로 변경되었습니다.`);
+      return;
+    }
+
     const updated = bookings.map((b) => (b.id === id ? { ...b, status } : b));
     setBookings(updated);
     setStorageItem('bookings', updated);
     showToast(`예약 상태가 '${status}'(으)로 변경되었습니다.`);
   };
 
-  const deleteBooking = (id: string) => {
+  const deleteBooking = async (id: string) => {
+    if (user?.role === 'admin') {
+      await updateAdminBooking(id, 'cancelled');
+      setBookings((current) => current.map((booking) => booking.id === id ? { ...booking, status: 'cancelled' } : booking));
+      showToast('예약이 취소 처리되었습니다.');
+      return;
+    }
+
     const updated = bookings.filter((b) => b.id !== id);
     setBookings(updated);
     setStorageItem('bookings', updated);

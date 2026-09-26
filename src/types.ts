@@ -33,7 +33,7 @@ export interface Game {
   highlightBadges?: string[];
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
 
 export interface Booking {
   id: string;
@@ -51,6 +51,7 @@ export interface Booking {
   status: BookingStatus;
   customData?: Record<string, string>;
   createdAt: string;
+  adminNote?: string;
 }
 
 export type FieldType = 'text' | 'tel' | 'email' | 'address' | 'select' | 'number' | 'textarea';
