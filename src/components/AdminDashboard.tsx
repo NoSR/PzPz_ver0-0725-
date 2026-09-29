@@ -30,8 +30,17 @@ import {
   Maximize2,
   Menu,
   RotateCcw,
-  Type
+  Type,
+  Download
 } from 'lucide-react';
+
+const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
+  pending: '대기중',
+  confirmed: '확정',
+  cancelled: '취소',
+  completed: '완료',
+  'no-show': '노쇼',
+};
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -98,6 +107,49 @@ export const AdminDashboard: React.FC = () => {
   const filteredBookings = bookingFilterStatus === 'all'
     ? bookings
     : bookings.filter((b) => b.status === bookingFilterStatus);
+
+  const handleExportBookings = () => {
+    if (filteredBookings.length === 0) return;
+
+    const customFieldKeys: string[] = Array.from(
+      new Set<string>(filteredBookings.flatMap((booking) => Object.keys(booking.customData ?? {}))),
+    ).sort();
+    const headers = [
+      '예약 번호', '예약자 성함', '전화번호', '이메일', '게임', '방문 날짜', '방문 시간',
+      '인원', '결제 금액(원)', '예약 상태', '신청 일시', '관리자 메모', ...customFieldKeys,
+    ];
+    const escapeCsvCell = (value: unknown): string => {
+      const text = String(value ?? '');
+      const safeText = /^[\t\r ]*[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replaceAll('"', '""')}"`;
+    };
+    const rows = filteredBookings.map((booking) => [
+      booking.id,
+      booking.userName,
+      booking.userPhone,
+      booking.userEmail ?? '',
+      booking.gameTitle,
+      booking.date,
+      booking.time,
+      booking.players,
+      booking.totalPrice,
+      BOOKING_STATUS_LABELS[booking.status],
+      booking.createdAt,
+      booking.adminNote ?? '',
+      ...customFieldKeys.map((key) => booking.customData?.[key] ?? ''),
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `퍼즐퍼즐_예약목록_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+    showToast(`${filteredBookings.length}건의 예약을 CSV 파일로 저장했습니다. Excel에서 열 수 있습니다.`);
+  };
 
   const handleBookingStatusChange = async (id: string, status: BookingStatus) => {
     setUpdatingBookingId(id);
@@ -219,20 +271,32 @@ export const AdminDashboard: React.FC = () => {
             </h3>
 
             {/* Filter buttons */}
-            <div className="flex items-center gap-1.5 text-xs font-bold">
-              {['all', 'pending', 'confirmed', 'cancelled'].map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setBookingFilterStatus(st)}
-                  className={`px-3 py-1.5 rounded-xl border transition-colors ${
-                    bookingFilterStatus === st
-                      ? 'bg-purple-600 text-white border-purple-500'
-                      : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
-                  }`}
-                >
-                  {st === 'all' ? '전체' : st === 'pending' ? '대기중' : st === 'confirmed' ? '확정' : '취소'}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                {['all', 'pending', 'confirmed', 'cancelled'].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setBookingFilterStatus(st)}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors ${
+                      bookingFilterStatus === st
+                        ? 'bg-purple-600 text-white border-purple-500'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    {st === 'all' ? '전체' : st === 'pending' ? '대기중' : st === 'confirmed' ? '확정' : '취소'}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleExportBookings}
+                disabled={adminBookingsLoading || Boolean(adminBookingsError) || filteredBookings.length === 0}
+                title={`현재 필터 예약 ${filteredBookings.length}건 다운로드`}
+                className="px-3 py-1.5 rounded-xl border border-emerald-600 bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>엑셀 다운로드</span>
+              </button>
             </div>
           </div>
 
