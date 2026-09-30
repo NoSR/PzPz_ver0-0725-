@@ -32,7 +32,8 @@ import {
   RotateCcw,
   Type,
   Download,
-  Upload
+  Upload,
+  type LucideIcon
 } from 'lucide-react';
 import { uploadAdminGameImage } from '../api/adminGames';
 
@@ -43,6 +44,9 @@ const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   completed: '완료',
   'no-show': '노쇼',
 };
+
+type AdminTabId = 'bookings' | 'games' | 'hero' | 'nav-menu' | 'form' | 'popups' | 'theme' | 'notices' | 'company';
+type AdminTabDefinition = { id: AdminTabId; label: string; icon: LucideIcon; badge?: number };
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -85,9 +89,7 @@ export const AdminDashboard: React.FC = () => {
 
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
-  const [adminTab, setAdminTab] = useState<
-    'bookings' | 'games' | 'hero' | 'nav-menu' | 'form' | 'popups' | 'theme' | 'notices' | 'company'
-  >('bookings');
+  const [adminTab, setAdminTab] = useState<AdminTabId>('bookings');
 
   // Local state for editing games
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -260,6 +262,18 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const adminTabs: AdminTabDefinition[] = [
+    { id: 'bookings', label: '예약 관리', icon: CalendarCheck, badge: bookings.length },
+    { id: 'games', label: '게임 등록/관리', icon: Gamepad2, badge: games.length },
+    { id: 'nav-menu', label: '메인 메뉴 이름 변경', icon: Menu },
+    { id: 'hero', label: '메인 히어로 설정', icon: Sparkles },
+    { id: 'form', label: '예약 폼 항목 설정', icon: SlidersHorizontal },
+    { id: 'popups', label: '팝업 관리', icon: Maximize2, badge: popups.length },
+    { id: 'theme', label: '로고 & 테마 & FX', icon: Palette },
+    { id: 'notices', label: '공지/이벤트 게시판', icon: Bell, badge: notices.length },
+    { id: 'company', label: '회사 소개 설정', icon: Info },
+  ];
+
   return (
     <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
       
@@ -283,25 +297,32 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Admin Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-200 dark:border-slate-800">
-        {[
-          { id: 'bookings', label: '예약 관리', icon: CalendarCheck, badge: bookings.length },
-          { id: 'games', label: '게임 등록/관리', icon: Gamepad2, badge: games.length },
-          { id: 'nav-menu', label: '메인 메뉴 이름 변경', icon: Menu },
-          { id: 'hero', label: '메인 히어로 설정', icon: Sparkles },
-          { id: 'form', label: '예약 폼 항목 설정', icon: SlidersHorizontal },
-          { id: 'popups', label: '팝업 관리', icon: Maximize2, badge: popups.length },
-          { id: 'theme', label: '로고 & 테마 & FX', icon: Palette },
-          { id: 'notices', label: '공지/이벤트 게시판', icon: Bell, badge: notices.length },
-          { id: 'company', label: '회사 소개 설정', icon: Info },
-        ].map((tab) => {
+      <nav aria-label="관리자 메뉴" className="border-b border-slate-200 dark:border-slate-800 pb-3">
+        <label className="block sm:hidden">
+          <span className="sr-only">관리자 메뉴 선택</span>
+          <select
+            aria-label="관리자 메뉴 선택"
+            value={adminTab}
+            onChange={(event) => setAdminTab(event.target.value as AdminTabId)}
+            className="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white"
+          >
+            {adminTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}{tab.badge !== undefined ? ` (${tab.badge})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="hidden sm:flex flex-wrap items-center gap-2">
+          {adminTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = adminTab === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setAdminTab(tab.id as any)}
-              className={`px-4 py-3 rounded-2xl font-extrabold text-xs transition-all whitespace-nowrap flex items-center gap-2 ${
+              onClick={() => setAdminTab(tab.id)}
+              className={`px-4 py-3 rounded-2xl font-extrabold text-xs transition-all flex items-center gap-2 ${
                 isActive
                   ? `${theme.buttonBg} shadow-lg`
                   : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -316,8 +337,9 @@ export const AdminDashboard: React.FC = () => {
               )}
             </button>
           );
-        })}
-      </div>
+          })}
+        </div>
+      </nav>
 
       {/* TAB 1: Bookings Management */}
       {adminTab === 'bookings' && (
