@@ -7,7 +7,8 @@ import {
   Notice, 
   Review, 
   InteractiveSettings,
-  NavMenuConfig
+  NavMenuConfig,
+  SectionCopyConfig
 } from '../types';
 
 export const INITIAL_GAMES: Game[] = [
@@ -159,6 +160,54 @@ export const INITIAL_COMPANY_INFO: CompanyInfo = {
   businessHours: '매일 11:00 ~ 23:00 (연중무휴)',
   instagramUrl: 'https://instagram.com',
   kakaoUrl: 'https://kakao.com',
+};
+
+export const INITIAL_SECTION_COPY_CONFIG: SectionCopyConfig = {
+  notices: {
+    eyebrow: 'PUZZLE PUZZLE NEWS & EVENTS',
+    titleLead: '스토어',
+    titleHighlight: '새소식 & 이벤트',
+    description: '특별 할인 프로모션, 신규 퍼즐 게임 입고 및 공지사항을 확인하세요.',
+    filterAll: '전체',
+    filterEvent: '🎁 이벤트',
+    filterNotice: '📢 공지사항',
+    filterWinner: '🏆 당첨자발표',
+    importantLabel: 'IMPORTANT',
+    searchPlaceholder: '제목 및 내용 검색...',
+    emptyMessage: '검색 조건에 해당되는 소식이 없습니다.',
+    detailCloseLabel: '확인',
+  },
+  company: {
+    eyebrow: 'STORE & BRAND STORY',
+    storyTitle: "🧩 '퍼즐퍼즐' 브랜드 철학",
+    storyDescription: "'퍼즐퍼즐(Puzzle Puzzle)'은 상상 속 입체 퍼즐과 고난도 트릭 장치를 감각적인 공간 디자인으로 실현한 프리미엄 퍼즐 체험 스토어입니다.",
+    featureOneTitle: '🎮 독창적 입체 기믹',
+    featureOneDescription: '자체 개발한 3D 루빅스 큐브 연동 장치와 디지털 모션 센서 기반 퍼즐',
+    featureTwoTitle: '📸 감성 포토존 스팟',
+    featureTwoDescription: '20대 취향저격 네온 조명과 파스텔톤 시그니처 큐브 오브제 연출',
+    storeGuideTitle: '오프라인 스토어 가이드',
+    addressLabel: '매장 주소',
+    phoneLabel: '대표 전화번호',
+    hoursLabel: '운영 시간',
+    walkingGuideText: '📍 홍대입구역 9번 출구 도보 5분거리',
+    mapLinkText: '지도 앱에서 찾아오기',
+    instagramLabel: '공식 인스타그램',
+    kakaoLabel: '카카오톡 채널',
+  },
+  footer: {
+    brandDescription: "'퍼즐퍼즐(Puzzle Puzzle)'은 20대와 모든 연령층이 함께 즐기는 스타일리시 입체 퍼즐 체험 스토어입니다. 감각적인 미션 공간에서 잊지 못할 추억을 만들어보세요.",
+    statusMessage: 'Prepared for GitHub Deploy & Cloudflare Sync',
+    quickLinksTitle: '빠른 메뉴 (Quick Navigation)',
+    gamesLink: '게임 스토어 & 예약',
+    reviewsLink: '실제 플레이 리뷰',
+    noticesLink: '공지사항 & 프로모션',
+    companyLink: '회사 소개 및 오시는 길',
+    storeGuideTitle: '스토어 가이드 & 시즌 테마',
+    themeLabel: '🎨 인터랙티브 레이아웃 테마:',
+    copyright: '© 2026 PUZZLE PUZZLE (퍼즐퍼즐). All rights reserved.',
+    craftedPrefix: 'Crafted with',
+    craftedSuffix: 'for Trendy Puzzle Enthusiasts',
+  },
 };
 
 export const INITIAL_NOTICES: Notice[] = [

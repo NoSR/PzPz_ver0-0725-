@@ -14,7 +14,9 @@ import {
   InteractiveSettings,
   User,
   BookingStatus,
-  NavMenuConfig
+  NavMenuConfig,
+  SectionCopyConfig,
+  SectionCopyPatch
 } from '../types';
 import {
   INITIAL_GAMES,
@@ -25,7 +27,8 @@ import {
   INITIAL_NOTICES,
   INITIAL_REVIEWS,
   INITIAL_INTERACTIVE_SETTINGS,
-  INITIAL_NAV_MENU_CONFIG
+  INITIAL_NAV_MENU_CONFIG,
+  INITIAL_SECTION_COPY_CONFIG
 } from '../data/initialData';
 import { createAdminSession, deleteAdminSession, getAdminSession } from '../api/adminSession';
 import { getAdminBookings, updateAdminBooking } from '../api/adminBookings';
@@ -106,6 +109,10 @@ interface StoreContextType {
   // Company Info
   companyInfo: CompanyInfo;
   updateCompanyInfo: (info: Partial<CompanyInfo>) => void;
+
+  // Fixed section copy
+  sectionCopy: SectionCopyConfig;
+  updateSectionCopy: (copy: SectionCopyPatch) => void;
 
   // Nav Menu Config
   navMenuConfig: NavMenuConfig;
@@ -257,6 +264,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [reviews, setReviews] = useState<Review[]>(() => getStorageItem('reviews', INITIAL_REVIEWS));
   const [notices, setNotices] = useState<Notice[]>(() => getStorageItem('notices', INITIAL_NOTICES));
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(() => getStorageItem('companyInfo', INITIAL_COMPANY_INFO));
+  const [sectionCopy, setSectionCopy] = useState<SectionCopyConfig>(() => {
+    const saved = getStorageItem<Partial<SectionCopyConfig>>('sectionCopy', {});
+    return {
+      notices: { ...INITIAL_SECTION_COPY_CONFIG.notices, ...saved.notices },
+      company: { ...INITIAL_SECTION_COPY_CONFIG.company, ...saved.company },
+      footer: { ...INITIAL_SECTION_COPY_CONFIG.footer, ...saved.footer },
+    };
+  });
   const [interactiveSettings, setInteractiveSettings] = useState<InteractiveSettings>(() => getStorageItem('interactiveSettings', INITIAL_INTERACTIVE_SETTINGS));
   const [navMenuConfig, setNavMenuConfig] = useState<NavMenuConfig>(() => getStorageItem('navMenuConfig', INITIAL_NAV_MENU_CONFIG));
 
@@ -564,6 +579,16 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast('회사 소개 정보가 수정되었습니다.');
   };
 
+  const updateSectionCopy = (copy: SectionCopyPatch) => {
+    const updated: SectionCopyConfig = {
+      notices: { ...sectionCopy.notices, ...copy.notices },
+      company: { ...sectionCopy.company, ...copy.company },
+      footer: { ...sectionCopy.footer, ...copy.footer },
+    };
+    setSectionCopy(updated);
+    setStorageItem('sectionCopy', updated);
+  };
+
   // Interactive Settings
   const updateInteractiveSettings = (settings: Partial<InteractiveSettings>) => {
     const updated = { ...interactiveSettings, ...settings };
@@ -635,6 +660,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         deleteNotice,
         companyInfo,
         updateCompanyInfo,
+        sectionCopy,
+        updateSectionCopy,
         navMenuConfig,
         updateNavMenuConfig,
         interactiveSettings,

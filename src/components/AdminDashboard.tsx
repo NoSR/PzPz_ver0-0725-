@@ -31,8 +31,10 @@ import {
   Menu,
   RotateCcw,
   Type,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
+import { uploadAdminGameImage } from '../api/adminGames';
 
 const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   pending: '대기중',
@@ -75,6 +77,8 @@ export const AdminDashboard: React.FC = () => {
     deleteNotice,
     companyInfo,
     updateCompanyInfo,
+    sectionCopy,
+    updateSectionCopy,
     navMenuConfig,
     updateNavMenuConfig,
   } = useStore();
@@ -88,6 +92,9 @@ export const AdminDashboard: React.FC = () => {
   // Local state for editing games
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [isNewGame, setIsNewGame] = useState(false);
+  const [gameImageSource, setGameImageSource] = useState<'url' | 'upload'>('url');
+  const [isUploadingGameImage, setIsUploadingGameImage] = useState(false);
+  const [gameImageUploadError, setGameImageUploadError] = useState('');
 
   // Local state for adding/editing popups
   const [newPopupTitle, setNewPopupTitle] = useState('🎁 신규 시즌 할인 이벤트');
@@ -171,8 +178,32 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleGameImageUpload = async (file: File) => {
+    if (file.size > 8 * 1024 * 1024) {
+      setGameImageUploadError('이미지 파일은 8MB 이하여야 합니다.');
+      return;
+    }
+
+    setIsUploadingGameImage(true);
+    setGameImageUploadError('');
+    try {
+      const imageUrl = await uploadAdminGameImage(file);
+      setEditingGame((current) => current ? { ...current, image: imageUrl } : current);
+      setGameImageSource('upload');
+    } catch (error) {
+      setGameImageUploadError(error instanceof Error ? error.message : '이미지를 업로드하지 못했습니다.');
+    } finally {
+      setIsUploadingGameImage(false);
+    }
+  };
+
   const handleGameSave = async () => {
     if (!editingGame) return;
+    if (isUploadingGameImage) return;
+    if (gameImageSource === 'upload' && !editingGame.image.startsWith('/api/public/game-images/')) {
+      showToast('저장하기 전에 게임 이미지를 R2에 업로드해 주세요.');
+      return;
+    }
 
     try {
       if (isNewGame) {
@@ -202,6 +233,32 @@ export const AdminDashboard: React.FC = () => {
     const updated = bookingFields.map((f) => (f.id === fieldId ? { ...f, label: newLabel } : f));
     updateBookingFields(updated);
   };
+
+  const renderCopyField = (
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+    multiline = false,
+  ) => (
+    <div>
+      <label className="font-bold text-slate-500 dark:text-slate-400 block mb-1">{label}</label>
+      {multiline ? (
+        <textarea
+          rows={3}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+        />
+      )}
+    </div>
+  );
 
   return (
     <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -418,6 +475,8 @@ export const AdminDashboard: React.FC = () => {
             </h3>
             <button
               onClick={() => {
+                setGameImageSource('url');
+                setGameImageUploadError('');
                 setEditingGame({
                   id: '',
                   title: '신규 퍼즐 테마',
@@ -473,6 +532,8 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => {
                       setEditingGame(g);
                       setIsNewGame(false);
+                      setGameImageSource(g.image.startsWith('/api/public/game-images/') ? 'upload' : 'url');
+                      setGameImageUploadError('');
                     }}
                     className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
                   >
@@ -540,14 +601,86 @@ export const AdminDashboard: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="font-bold text-slate-400 block mb-1">이미지 URL</label>
-                    <input
-                      type="text"
-                      value={editingGame.image}
-                      onChange={(e) => setEditingGame({ ...editingGame, image: e.target.value })}
-                      className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
-                    />
+                  <div className="sm:col-span-2 space-y-2">
+                    <fieldset>
+                      <legend className="font-bold text-slate-400 block mb-2">게임 대표 이미지</legend>
+                      <div className="flex flex-wrap gap-4 text-slate-700 dark:text-slate-300">
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="game-image-source"
+                            value="url"
+                            checked={gameImageSource === 'url'}
+                            onChange={() => {
+                              setGameImageSource('url');
+                              setGameImageUploadError('');
+                            }}
+                          />
+                          <span>웹 주소 입력</span>
+                        </label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="game-image-source"
+                            value="upload"
+                            checked={gameImageSource === 'upload'}
+                            onChange={() => {
+                              setGameImageSource('upload');
+                              setGameImageUploadError('');
+                            }}
+                          />
+                          <span>R2에 이미지 업로드</span>
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    {gameImageSource === 'url' ? (
+                      <input
+                        type="url"
+                        value={editingGame.image}
+                        onChange={(e) => setEditingGame({ ...editingGame, image: e.target.value })}
+                        placeholder="https://example.com/image.jpg"
+                        aria-label="게임 이미지 URL"
+                        className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 w-fit px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-bold cursor-pointer">
+                          <Upload className="w-4 h-4" />
+                          <span>{isUploadingGameImage ? '업로드 중...' : '이미지 파일 선택'}</span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            disabled={isUploadingGameImage}
+                            onChange={(event) => {
+                              const file = event.currentTarget.files?.[0];
+                              if (file) void handleGameImageUpload(file);
+                              event.currentTarget.value = '';
+                            }}
+                            className="sr-only"
+                          />
+                        </label>
+                        <p className="text-[11px] text-slate-500">JPEG, PNG, WebP · 최대 8MB</p>
+                        {isUploadingGameImage && (
+                          <p role="status" className="text-xs text-emerald-600">R2에 이미지를 업로드하고 있습니다...</p>
+                        )}
+                        {gameImageUploadError && (
+                          <p role="alert" className="text-xs font-bold text-red-500">{gameImageUploadError}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {editingGame.image && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <img
+                          src={editingGame.image}
+                          alt="게임 이미지 미리보기"
+                          className="w-20 h-20 rounded-xl object-cover bg-slate-100 dark:bg-slate-950"
+                          referrerPolicy="no-referrer"
+                        />
+                        <span className="text-[11px] text-slate-500">현재 선택된 이미지 미리보기</span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -583,13 +716,18 @@ export const AdminDashboard: React.FC = () => {
 
                 <div className="flex justify-end gap-2 pt-3">
                   <button
-                    onClick={() => setEditingGame(null)}
+                    onClick={() => {
+                      setEditingGame(null);
+                      setGameImageUploadError('');
+                    }}
+                    disabled={isUploadingGameImage}
                     className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800"
                   >
                     취소
                   </button>
                   <button
                     onClick={() => void handleGameSave()}
+                    disabled={isUploadingGameImage}
                     className={`px-5 py-2 rounded-xl text-xs font-black ${theme.buttonBg}`}
                   >
                     저장하기
@@ -1062,6 +1200,27 @@ export const AdminDashboard: React.FC = () => {
       {/* TAB 7: Notices & Events */}
       {adminTab === 'notices' && (
         <div className="space-y-6">
+          <section className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">새소식 섹션 문구</h3>
+              <p className="text-xs text-slate-500 mt-1">현재 디자인을 유지하며 제목과 설명을 수정합니다.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {renderCopyField('상단 라벨', sectionCopy.notices.eyebrow, (value) => updateSectionCopy({ notices: { eyebrow: value } }))}
+              {renderCopyField('제목 앞부분', sectionCopy.notices.titleLead, (value) => updateSectionCopy({ notices: { titleLead: value } }))}
+              {renderCopyField('강조 제목', sectionCopy.notices.titleHighlight, (value) => updateSectionCopy({ notices: { titleHighlight: value } }))}
+              {renderCopyField('섹션 설명', sectionCopy.notices.description, (value) => updateSectionCopy({ notices: { description: value } }), true)}
+              {renderCopyField('전체 필터 이름', sectionCopy.notices.filterAll, (value) => updateSectionCopy({ notices: { filterAll: value } }))}
+              {renderCopyField('이벤트 필터 이름', sectionCopy.notices.filterEvent, (value) => updateSectionCopy({ notices: { filterEvent: value } }))}
+              {renderCopyField('공지 필터 이름', sectionCopy.notices.filterNotice, (value) => updateSectionCopy({ notices: { filterNotice: value } }))}
+              {renderCopyField('당첨자 필터 이름', sectionCopy.notices.filterWinner, (value) => updateSectionCopy({ notices: { filterWinner: value } }))}
+              {renderCopyField('중요 배지 문구', sectionCopy.notices.importantLabel, (value) => updateSectionCopy({ notices: { importantLabel: value } }))}
+              {renderCopyField('검색창 안내 문구', sectionCopy.notices.searchPlaceholder, (value) => updateSectionCopy({ notices: { searchPlaceholder: value } }))}
+              {renderCopyField('검색 결과가 없을 때', sectionCopy.notices.emptyMessage, (value) => updateSectionCopy({ notices: { emptyMessage: value } }), true)}
+              {renderCopyField('상세 확인 버튼', sectionCopy.notices.detailCloseLabel, (value) => updateSectionCopy({ notices: { detailCloseLabel: value } }))}
+            </div>
+          </section>
+
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <h3 className="text-xl font-black text-slate-900 dark:text-white">공지사항 및 이벤트 게시물 작성</h3>
 
@@ -1145,54 +1304,71 @@ export const AdminDashboard: React.FC = () => {
 
       {/* TAB 8: Company Info */}
       {adminTab === 'company' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">
-              회사 소개 페이지 관리 (노출 / 비노출 선택 및 HTML 수정)
-            </h3>
-
-            <button
-              onClick={() => updateCompanyInfo({ visible: !companyInfo.visible })}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
-                companyInfo.visible ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-700'
-              }`}
-            >
-              {companyInfo.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span>{companyInfo.visible ? '페이지 노출중' : '페이지 숨김'}</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="font-bold text-slate-400 block mb-1">회사/스토어 제목</label>
-              <input
-                type="text"
-                value={companyInfo.title}
-                onChange={(e) => updateCompanyInfo({ title: e.target.value })}
-                className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
-              />
+        <div className="space-y-6">
+          <section className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">스토어 소개 문구 및 안내 정보</h3>
+              <button
+                onClick={() => updateCompanyInfo({ visible: !companyInfo.visible })}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+                  companyInfo.visible ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-700'
+                }`}
+              >
+                {companyInfo.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <span>{companyInfo.visible ? '페이지 노출중' : '페이지 숨김'}</span>
+              </button>
             </div>
 
-            <div>
-              <label className="font-bold text-slate-400 block mb-1">매장 주소</label>
-              <input
-                type="text"
-                value={companyInfo.address}
-                onChange={(e) => updateCompanyInfo({ address: e.target.value })}
-                className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              {renderCopyField('스토어 제목', companyInfo.title, (value) => updateCompanyInfo({ title: value }))}
+              {renderCopyField('스토어 한 줄 설명', companyInfo.subtitle, (value) => updateCompanyInfo({ subtitle: value }), true)}
+              {renderCopyField('매장 주소', companyInfo.address, (value) => updateCompanyInfo({ address: value }), true)}
+              {renderCopyField('대표 전화번호', companyInfo.phone, (value) => updateCompanyInfo({ phone: value }))}
+              {renderCopyField('운영 시간', companyInfo.businessHours, (value) => updateCompanyInfo({ businessHours: value }))}
             </div>
-          </div>
 
-          <div>
-            <label className="font-bold text-slate-400 block text-xs mb-1">HTML 지원 회사 소개 내용</label>
-            <textarea
-              rows={6}
-              value={companyInfo.contentHtml}
-              onChange={(e) => updateCompanyInfo({ contentHtml: e.target.value })}
-              className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono"
-            />
-          </div>
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-4">
+              <h4 className="font-black text-slate-900 dark:text-white">브랜드 소개와 매장 안내</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {renderCopyField('소개 상단 라벨', sectionCopy.company.eyebrow, (value) => updateSectionCopy({ company: { eyebrow: value } }))}
+                {renderCopyField('브랜드 소개 제목', sectionCopy.company.storyTitle, (value) => updateSectionCopy({ company: { storyTitle: value } }))}
+                {renderCopyField('브랜드 소개 설명', sectionCopy.company.storyDescription, (value) => updateSectionCopy({ company: { storyDescription: value } }), true)}
+                {renderCopyField('첫 번째 특징 제목', sectionCopy.company.featureOneTitle, (value) => updateSectionCopy({ company: { featureOneTitle: value } }))}
+                {renderCopyField('첫 번째 특징 설명', sectionCopy.company.featureOneDescription, (value) => updateSectionCopy({ company: { featureOneDescription: value } }), true)}
+                {renderCopyField('두 번째 특징 제목', sectionCopy.company.featureTwoTitle, (value) => updateSectionCopy({ company: { featureTwoTitle: value } }))}
+                {renderCopyField('두 번째 특징 설명', sectionCopy.company.featureTwoDescription, (value) => updateSectionCopy({ company: { featureTwoDescription: value } }), true)}
+                {renderCopyField('매장 안내 제목', sectionCopy.company.storeGuideTitle, (value) => updateSectionCopy({ company: { storeGuideTitle: value } }))}
+                {renderCopyField('주소 항목 제목', sectionCopy.company.addressLabel, (value) => updateSectionCopy({ company: { addressLabel: value } }))}
+                {renderCopyField('전화 항목 제목', sectionCopy.company.phoneLabel, (value) => updateSectionCopy({ company: { phoneLabel: value } }))}
+                {renderCopyField('운영 시간 항목 제목', sectionCopy.company.hoursLabel, (value) => updateSectionCopy({ company: { hoursLabel: value } }))}
+                {renderCopyField('교통 안내 문구', sectionCopy.company.walkingGuideText, (value) => updateSectionCopy({ company: { walkingGuideText: value } }))}
+                {renderCopyField('지도 버튼 문구', sectionCopy.company.mapLinkText, (value) => updateSectionCopy({ company: { mapLinkText: value } }))}
+                {renderCopyField('인스타그램 접근성 이름', sectionCopy.company.instagramLabel, (value) => updateSectionCopy({ company: { instagramLabel: value } }))}
+                {renderCopyField('카카오톡 접근성 이름', sectionCopy.company.kakaoLabel, (value) => updateSectionCopy({ company: { kakaoLabel: value } }))}
+              </div>
+            </div>
+          </section>
+
+          <section className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">푸터 문구</h3>
+              <p className="text-xs text-slate-500 mt-1">하단 영역의 소개, 메뉴와 저작권 문구를 수정합니다.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {renderCopyField('브랜드 설명', sectionCopy.footer.brandDescription, (value) => updateSectionCopy({ footer: { brandDescription: value } }), true)}
+              {renderCopyField('브랜드 아래 짧은 문구', sectionCopy.footer.statusMessage, (value) => updateSectionCopy({ footer: { statusMessage: value } }))}
+              {renderCopyField('빠른 메뉴 제목', sectionCopy.footer.quickLinksTitle, (value) => updateSectionCopy({ footer: { quickLinksTitle: value } }))}
+              {renderCopyField('게임 메뉴 이름', sectionCopy.footer.gamesLink, (value) => updateSectionCopy({ footer: { gamesLink: value } }))}
+              {renderCopyField('리뷰 메뉴 이름', sectionCopy.footer.reviewsLink, (value) => updateSectionCopy({ footer: { reviewsLink: value } }))}
+              {renderCopyField('새소식 메뉴 이름', sectionCopy.footer.noticesLink, (value) => updateSectionCopy({ footer: { noticesLink: value } }))}
+              {renderCopyField('스토어 소개 메뉴 이름', sectionCopy.footer.companyLink, (value) => updateSectionCopy({ footer: { companyLink: value } }))}
+              {renderCopyField('매장 정보 제목', sectionCopy.footer.storeGuideTitle, (value) => updateSectionCopy({ footer: { storeGuideTitle: value } }))}
+              {renderCopyField('테마 선택 제목', sectionCopy.footer.themeLabel, (value) => updateSectionCopy({ footer: { themeLabel: value } }))}
+              {renderCopyField('저작권 문구', sectionCopy.footer.copyright, (value) => updateSectionCopy({ footer: { copyright: value } }))}
+              {renderCopyField('제작 문구 앞부분', sectionCopy.footer.craftedPrefix, (value) => updateSectionCopy({ footer: { craftedPrefix: value } }))}
+              {renderCopyField('제작 문구 뒷부분', sectionCopy.footer.craftedSuffix, (value) => updateSectionCopy({ footer: { craftedSuffix: value } }))}
+            </div>
+          </section>
         </div>
       )}
 

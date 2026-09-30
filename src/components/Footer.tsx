@@ -6,7 +6,8 @@ import { SeasonalTheme } from '../types';
 import { MapPin, Phone, Clock, Instagram, Sparkles, Heart, Lock } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { companyInfo, seasonalTheme, setSeasonalTheme, setActiveTab, setIsAdminAuthModalOpen, user } = useStore();
+  const { companyInfo, seasonalTheme, setSeasonalTheme, setActiveTab, setIsAdminAuthModalOpen, user, sectionCopy } = useStore();
+  const copy = sectionCopy.footer;
 
   return (
     <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 transition-colors duration-300 pt-16 pb-12">
@@ -18,39 +19,39 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-5 space-y-4">
             <Logo size="lg" />
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              '퍼즐퍼즐(Puzzle Puzzle)'은 20대와 모든 연령층이 함께 즐기는 스타일리시 입체 퍼즐 체험 스토어입니다. 감각적인 미션 공간에서 잊지 못할 추억을 만들어보세요.
+              {copy.brandDescription}
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-bold text-purple-400">
               <Sparkles className="w-4 h-4" />
-              <span>Prepared for GitHub Deploy & Cloudflare Sync</span>
+              <span>{copy.statusMessage}</span>
             </div>
           </div>
 
           {/* Column 2: Quick Links */}
           <div className="md:col-span-3 space-y-3">
             <h4 className="font-extrabold text-sm text-white uppercase tracking-wider">
-              빠른 메뉴 (Quick Navigation)
+              {copy.quickLinksTitle}
             </h4>
             <ul className="space-y-2 text-xs font-medium text-slate-400">
               <li>
                 <button onClick={() => setActiveTab('games')} className="hover:text-purple-400 transition-colors">
-                  게임 스토어 & 예약
+                  {copy.gamesLink}
                 </button>
               </li>
               <li>
                 <button onClick={() => setActiveTab('reviews')} className="hover:text-purple-400 transition-colors">
-                  실제 플레이 리뷰
+                  {copy.reviewsLink}
                 </button>
               </li>
               <li>
                 <button onClick={() => setActiveTab('notices')} className="hover:text-purple-400 transition-colors">
-                  공지사항 & 프로모션
+                  {copy.noticesLink}
                 </button>
               </li>
               {companyInfo.visible && (
                 <li>
                   <button onClick={() => setActiveTab('about')} className="hover:text-purple-400 transition-colors">
-                    회사 소개 및 오시는 길
+                    {copy.companyLink}
                   </button>
                 </li>
               )}
@@ -60,7 +61,7 @@ export const Footer: React.FC = () => {
           {/* Column 3: Store Info & Seasonal Theme Selector */}
           <div className="md:col-span-4 space-y-4">
             <h4 className="font-extrabold text-sm text-white uppercase tracking-wider">
-              스토어 가이드 & 시즌 테마
+              {copy.storeGuideTitle}
             </h4>
 
             <div className="space-y-1.5 text-xs text-slate-400">
@@ -70,7 +71,7 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="pt-2 space-y-2">
-              <span className="text-[11px] font-bold text-slate-500 uppercase block">🎨 인터랙티브 레이아웃 테마:</span>
+              <span className="text-[11px] font-bold text-slate-500 uppercase block">{copy.themeLabel}</span>
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(SEASONAL_THEMES).map(([key, t]) => (
                   <button
@@ -94,13 +95,13 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© 2026 PUZZLE PUZZLE (퍼즐퍼즐). All rights reserved.</p>
+          <p>{copy.copyright}</p>
 
           <div className="flex items-center gap-4">
             <p className="flex items-center gap-1">
-              <span>Crafted with</span>
+              <span>{copy.craftedPrefix}</span>
               <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-500" />
-              <span>for Trendy Puzzle Enthusiasts</span>
+              <span>{copy.craftedSuffix}</span>
             </p>
 
             {/* Discrete Admin Link */}

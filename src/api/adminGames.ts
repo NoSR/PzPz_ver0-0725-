@@ -15,6 +15,19 @@ export const getAdminGames = async (): Promise<Game[]> => {
   return (await response.json() as { games: Game[] }).games;
 };
 
+export const uploadAdminGameImage = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch('/api/admin/game-images', {
+    method: 'POST',
+    credentials: 'same-origin',
+    body: formData,
+  });
+  if (!response.ok) throw new Error(await readError(response));
+  return (await response.json() as { imageUrl: string }).imageUrl;
+};
+
 export const createAdminGame = async (game: Omit<Game, 'id'>): Promise<Game> => {
   const response = await fetch('/api/admin/games', {
     method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(game),

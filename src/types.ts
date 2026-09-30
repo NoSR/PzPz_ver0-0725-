@@ -137,6 +137,64 @@ export interface CompanyInfo {
   kakaoUrl?: string;
 }
 
+export interface NoticesSectionCopy {
+  eyebrow: string;
+  titleLead: string;
+  titleHighlight: string;
+  description: string;
+  filterAll: string;
+  filterEvent: string;
+  filterNotice: string;
+  filterWinner: string;
+  importantLabel: string;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  detailCloseLabel: string;
+}
+
+export interface CompanySectionCopy {
+  eyebrow: string;
+  storyTitle: string;
+  storyDescription: string;
+  featureOneTitle: string;
+  featureOneDescription: string;
+  featureTwoTitle: string;
+  featureTwoDescription: string;
+  storeGuideTitle: string;
+  addressLabel: string;
+  phoneLabel: string;
+  hoursLabel: string;
+  walkingGuideText: string;
+  mapLinkText: string;
+  instagramLabel: string;
+  kakaoLabel: string;
+}
+
+export interface FooterSectionCopy {
+  brandDescription: string;
+  statusMessage: string;
+  quickLinksTitle: string;
+  gamesLink: string;
+  reviewsLink: string;
+  noticesLink: string;
+  companyLink: string;
+  storeGuideTitle: string;
+  themeLabel: string;
+  copyright: string;
+  craftedPrefix: string;
+  craftedSuffix: string;
+}
+
+export interface SectionCopyConfig {
+  notices: NoticesSectionCopy;
+  company: CompanySectionCopy;
+  footer: FooterSectionCopy;
+}
+
+export type SectionCopyPatch = {
+  [Section in keyof SectionCopyConfig]?: Partial<SectionCopyConfig[Section]>;
+};
+
 export interface InteractiveSettings {
   enableCubeParticles: boolean;
   enable3dHover: boolean;

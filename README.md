@@ -44,6 +44,10 @@ Bun을 Cloudflare 빌드 환경에서 사용할 수 없다면 Build command를 `
 
 `public/_redirects`는 `/pz_admin` 같은 SPA 경로를 새로고침할 때 `index.html`로 전달합니다. `public/_headers`는 Pages 배포 결과에 기본 보안 헤더와 정적 자산 캐시 정책을 적용합니다.
 
+## 게임 이미지 업로드
+
+게임 이미지를 R2에 업로드하려면 Cloudflare R2에 `puzzlepuzzle-game-images` bucket을 만들고, `wrangler.json`의 `GAME_IMAGES` binding을 해당 bucket에 연결합니다. 로컬 Pages 개발 서버에서는 Wrangler가 이 binding을 로컬로 에뮬레이션합니다. 관리자 인증을 통과한 업로드만 허용하며 JPEG, PNG, WebP 파일을 최대 8MB까지 받을 수 있습니다. 이미지는 `/api/public/game-images/...` 경로로 제공되므로 별도의 공개 bucket 설정은 필요하지 않습니다.
+
 ## 환경 변수와 비밀값
 
 현재 브라우저 앱에서는 `GEMINI_API_KEY`를 사용하지 않습니다. Gemini 또는 예약 API를 추가할 때 키를 `VITE_*` 변수로 만들거나 프런트엔드 코드에 넣으면 안 됩니다. Cloudflare Pages Functions/Workers의 Secret으로 저장하고 서버에서만 사용해야 합니다.

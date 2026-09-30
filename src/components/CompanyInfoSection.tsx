@@ -4,7 +4,8 @@ import { SEASONAL_THEMES } from '../utils/themeUtils';
 import { MapPin, Phone, Clock, Instagram, MessageCircle, ExternalLink, Sparkles } from 'lucide-react';
 
 export const CompanyInfoSection: React.FC = () => {
-  const { companyInfo, seasonalTheme } = useStore();
+  const { companyInfo, seasonalTheme, sectionCopy } = useStore();
+  const copy = sectionCopy.company;
   const theme = SEASONAL_THEMES[seasonalTheme] || SEASONAL_THEMES['trendy-lavender'];
 
   if (!companyInfo.visible) return null;
@@ -17,7 +18,7 @@ export const CompanyInfoSection: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 text-xs font-black">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>STORE & BRAND STORY</span>
+            <span>{copy.eyebrow}</span>
           </div>
           <h2 className="text-3xl font-black text-slate-900 dark:text-white">
             {companyInfo.title}
@@ -33,13 +34,22 @@ export const CompanyInfoSection: React.FC = () => {
           {/* Main HTML Story Content */}
           <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
             <h3 className="text-xl font-extrabold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-3">
-              🧩 '퍼즐퍼즐' 브랜드 철학
+              {copy.storyTitle}
             </h3>
 
-            <div
-              className="prose dark:prose-invert max-w-none text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: companyInfo.contentHtml }}
-            />
+            <div className="space-y-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p>{copy.storyDescription}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                  <h4 className="font-bold text-purple-400 mb-1">{copy.featureOneTitle}</h4>
+                  <p className="text-sm text-gray-300">{copy.featureOneDescription}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
+                  <h4 className="font-bold text-pink-400 mb-1">{copy.featureTwoTitle}</h4>
+                  <p className="text-sm text-gray-300">{copy.featureTwoDescription}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Location & Operating Hours Sidebar */}
@@ -49,7 +59,7 @@ export const CompanyInfoSection: React.FC = () => {
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
               <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-purple-500" />
-                <span>오프라인 스토어 가이드</span>
+                <span>{copy.storeGuideTitle}</span>
               </h3>
 
               <div className="space-y-4 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -57,7 +67,7 @@ export const CompanyInfoSection: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block">매장 주소</span>
+                    <span className="text-[10px] text-slate-400 font-bold block">{copy.addressLabel}</span>
                     <span className="font-extrabold text-slate-900 dark:text-white">{companyInfo.address}</span>
                   </div>
                 </div>
@@ -65,7 +75,7 @@ export const CompanyInfoSection: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <Phone className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block">대표 전화번호</span>
+                    <span className="text-[10px] text-slate-400 font-bold block">{copy.phoneLabel}</span>
                     <span className="font-extrabold text-slate-900 dark:text-white">{companyInfo.phone}</span>
                   </div>
                 </div>
@@ -73,7 +83,7 @@ export const CompanyInfoSection: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block">운영 시간</span>
+                    <span className="text-[10px] text-slate-400 font-bold block">{copy.hoursLabel}</span>
                     <span className="font-extrabold text-slate-900 dark:text-white">{companyInfo.businessHours}</span>
                   </div>
                 </div>
@@ -83,7 +93,7 @@ export const CompanyInfoSection: React.FC = () => {
               {/* Map Placeholder Banner */}
               <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center space-y-2">
                 <span className="text-xs font-extrabold text-purple-600 dark:text-purple-300 block">
-                  📍 홍대입구역 9번 출구 도보 5분거리
+                  {copy.walkingGuideText}
                 </span>
                 <a
                   href={`https://map.naver.com/v5/search/${encodeURIComponent(companyInfo.address)}`}
@@ -91,7 +101,7 @@ export const CompanyInfoSection: React.FC = () => {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-md"
                 >
-                  <span>지도 앱에서 찾아오기</span>
+                  <span>{copy.mapLinkText}</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -104,7 +114,7 @@ export const CompanyInfoSection: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-pink-500 hover:scale-110 transition-transform"
-                    title="공식 인스타그램"
+                    title={copy.instagramLabel}
                   >
                     <Instagram className="w-5 h-5" />
                   </a>
@@ -115,7 +125,7 @@ export const CompanyInfoSection: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-amber-500 hover:scale-110 transition-transform"
-                    title="카카오톡 채널"
+                    title={copy.kakaoLabel}
                   >
                     <MessageCircle className="w-5 h-5" />
                   </a>
