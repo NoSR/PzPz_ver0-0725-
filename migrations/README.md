@@ -8,6 +8,6 @@ Run the local schema migration with:
 npm run db:migrate:local
 ```
 
-Local D1 data is persisted in `.wrangler/state` and is intentionally ignored by Git. Preview and Production database bindings will be added only after their D1 databases are created in Cloudflare.
+Local D1 data is persisted in `.wrangler/state` and is intentionally ignored by Git. The Production binding in `wrangler.json` points to the Cloudflare D1 database `puzzlepuzzle-prod-db`.
 
-The D1 ID in `wrangler.json` is a local-development placeholder. Replace it with real, environment-specific Cloudflare D1 IDs before deploying Pages Functions remotely.
+For a remote database, use `npx wrangler d1 migrations apply DB --remote`. Do not run the development-only `scripts/seed-local.sql` against Production; apply approved store content separately.

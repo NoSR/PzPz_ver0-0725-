@@ -56,16 +56,17 @@ Bun을 Cloudflare 빌드 환경에서 사용할 수 없다면 Build command를 `
 
 ## 현재 운영 범위
 
-로컬 개발 환경에서는 Pages Functions와 D1을 사용해 게임별 예약 가능 시간 조회, 중복 슬롯 방지 예약 요청, 관리자 세션 인증을 검증할 수 있습니다. 현재 Cloudflare Pages 배포에 연결된 D1 binding과 실제 매장 seed 데이터는 아직 준비 전이므로, 배포된 사이트를 운영용 예약 시스템으로 사용하기 전에는 Preview/Production D1을 만들고 migrations, approved content seed, 관리자 계정을 적용해야 합니다.
+로컬 개발 환경에서는 Pages Functions와 D1을 사용해 게임별 예약 가능 시간 조회, 중복 슬롯 방지 예약 요청, 관리자 세션 인증을 검증할 수 있습니다. Production D1 migration과 R2 게임 이미지 bucket은 Cloudflare에 연결되어 있습니다. 현재 Production D1에는 스키마만 적용되어 있고 실제 매장 게임 데이터와 관리자 계정은 아직 입력하지 않았으므로, 예약 운영을 시작하기 전 승인된 콘텐츠 seed와 관리자 계정을 별도로 적용해야 합니다.
 
 ## 사용자가 해야 할 Cloudflare 작업
 
 1. Cloudflare 계정을 만들고 Pages에서 **Create a project > Connect to Git**을 선택합니다.
 2. GitHub 저장소 `NoSR/PzPz_ver0-0725-`를 연결합니다.
 3. 위의 Production branch, Build command, Output directory를 입력합니다.
-4. 첫 배포 후 `*.pages.dev` 주소에서 홈 화면, 예약 모달, `/pz_admin` 직접 접속과 새로고침을 확인합니다.
-5. 실제 매장 도메인을 구매한 뒤 Pages의 **Custom domains**에서 연결합니다. DNS를 Cloudflare로 이전하면 HTTPS 인증서가 자동으로 발급됩니다.
-6. 도메인 연결 뒤 root 도메인과 `www` 중 하나를 canonical 주소로 정하고 다른 주소는 리디렉션합니다.
+4. 배포 후 `https://pzpz-ver0-0725.pages.dev`에서 홈 화면, 예약 모달, `/pz_admin` 직접 접속과 새로고침을 확인합니다.
+5. `https://pzpz-ver0-0725.pages.dev/api/health`가 `{"status":"ok","database":"reachable"}`를 반환하는지 확인합니다.
+6. 실제 매장 도메인을 구매한 뒤 Pages의 **Custom domains**에서 연결합니다. DNS를 Cloudflare로 이전하면 HTTPS 인증서가 자동으로 발급됩니다.
+7. 도메인 연결 뒤 root 도메인과 `www` 중 하나를 canonical 주소로 정하고 다른 주소는 리디렉션합니다.
 
 ## 다음 개발 단계
 

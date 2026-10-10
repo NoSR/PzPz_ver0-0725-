@@ -6,8 +6,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "puzzlepuzzle-local",
-      "database_id": "00000000-0000-0000-0000-000000000001",
+      "database_name": "puzzlepuzzle-prod-db",
+      "database_id": "92c9e5cc-9920-41cf-a72f-ea2010b9e141",
       "migrations_dir": "migrations"
     }
   ],
